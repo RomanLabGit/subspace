@@ -635,6 +635,8 @@ where
             .runtime_api()
             .root_plot_public_key(*block.header.parent_hash())?;
 
+        println!("------------------------ DEBUG: Block import verification started");
+
         self.block_import_verification(
             block_hash,
             block.header.clone(),
@@ -645,6 +647,8 @@ where
             skip_execution_checks,
         )
         .await?;
+
+        println!("------------------------ DEBUG: Block import verification successful");
 
         let parent_weight = if block_number.is_one() {
             0
@@ -710,16 +714,43 @@ where
             // Wait for all the acknowledgements to finish.
         }
 
-        self.inner
+        println!("------------------------ DEBUG: Calling inner block import");
+
+        let response = self
+            .inner
             .import_block(block)
             .await
-            .map_err(Error::InnerBlockImportError)
+            .map_err(Error::InnerBlockImportError);
+
+        if response.is_ok() {
+            println!(
+                "------------------------ DEBUG: Block:{:?} Calling inner block import result is successful", block_number
+            );
+        } else {
+            println!("------------------------ DEBUG: Block:{:?} Calling inner block import result is failure with error: {:?}", block_number, response);
+        }
+
+        response
     }
 
     async fn check_block(
         &self,
         block: BlockCheckParams<Block>,
     ) -> Result<ImportResult, Self::Error> {
-        self.inner.check_block(block).await.map_err(Into::into)
+        let number = block.number;
+        let response = self.inner.check_block(block).await.map_err(Into::into);
+        if response.is_ok() {
+            println!(
+                "--------------------- DEBUG: Block:{:?} Checked successfully",
+                number
+            );
+        } else {
+            println!(
+                "--------------------- DEBUG: Block:{:?} Check failed with response: {:?}",
+                number, response
+            );
+        }
+
+        response
     }
 }
