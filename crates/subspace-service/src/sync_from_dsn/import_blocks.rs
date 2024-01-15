@@ -138,6 +138,12 @@ where
             download_and_reconstruct_blocks(segment_index, piece_provider, &mut reconstructor)
                 .await?;
 
+        trace!(
+            "Got {:?} blocks from reconstructed segment and capacity is: {:?}",
+            blocks.len(),
+            QUEUED_BLOCKS_LIMIT
+        );
+
         let mut blocks_to_import = Vec::with_capacity(QUEUED_BLOCKS_LIMIT as usize);
 
         let mut best_block_number = info.best_number;
@@ -158,6 +164,8 @@ where
                     ));
                 }
             }
+
+            trace!("Starting to import blocks. block number: {:?}, best_block_number: {:?}, Substraction result: {:?}", block_number, best_block_number, block_number.saturating_sub(best_block_number));
 
             // Limit number of queued blocks for import
             // NOTE: Since best block number might be non-canonical, we might actually have more
@@ -189,6 +197,7 @@ where
             // correspond to a short fork, so we need to import it even if we already have another
             // block at this height
             if client.expect_header(signed_block.block.hash()).is_ok() {
+                trace!("No need to import block already present....");
                 continue;
             }
 
@@ -214,6 +223,7 @@ where
 
             downloaded_blocks += 1;
 
+            debug!("Adding block {} from DSN to the import queue", block_number);
             if downloaded_blocks % 1000 == 0 {
                 debug!("Adding block {} from DSN to the import queue", block_number);
             }
@@ -223,6 +233,7 @@ where
             // Import queue handles verification and importing it into the client
             let last_segment = segment_indices_iter.peek().is_none();
             if last_segment {
+                trace!("Importing and notifying substrate' sync mechanism");
                 let last_block = blocks_to_import
                     .pop()
                     .expect("Not empty, checked above; qed");
@@ -231,6 +242,7 @@ where
                 // This will notify Substrate's sync mechanism and allow regular Substrate sync to continue gracefully
                 import_queue_service.import_blocks(BlockOrigin::NetworkBroadcast, vec![last_block]);
             } else {
+                trace!("Only Importing");
                 import_queue_service
                     .import_blocks(BlockOrigin::NetworkInitialSync, blocks_to_import);
             }
