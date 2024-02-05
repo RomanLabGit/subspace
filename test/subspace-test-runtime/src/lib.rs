@@ -662,6 +662,7 @@ impl pallet_domains::Config for Runtime {
 parameter_types! {
     pub const BlockReward: Balance = SSC / (ExpectedVotesPerBlock::get() as Balance + 1);
     pub const VoteReward: Balance = SSC / (ExpectedVotesPerBlock::get() as Balance + 1);
+    pub const AvgBlockspaceUsageNumBlocks: BlockNumber = 100;
 }
 
 impl pallet_rewards::Config for Runtime {
@@ -669,6 +670,7 @@ impl pallet_rewards::Config for Runtime {
     type Currency = Balances;
     type BlockReward = BlockReward;
     type VoteReward = VoteReward;
+    type AvgBlockspaceUsageNumBlocks = AvgBlockspaceUsageNumBlocks;
     type FindBlockRewardAddress = Subspace;
     type FindVotingRewardAddresses = Subspace;
     type WeightInfo = ();

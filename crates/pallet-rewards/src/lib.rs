@@ -21,8 +21,8 @@
 
 mod default_weights;
 
-use frame_support::traits::{Currency, Get};
-use frame_support::weights::Weight;
+use frame_support::pallet_prelude::*;
+use frame_support::traits::Currency;
 use frame_system::pallet_prelude::*;
 pub use pallet::*;
 use subspace_runtime_primitives::{FindBlockRewardAddress, FindVotingRewardAddresses};
@@ -70,6 +70,10 @@ mod pallet {
         #[pallet::constant]
         type VoteReward: Get<BalanceOf<Self>>;
 
+        /// Number of blocks over which to compute average blockspace usage.
+        #[pallet::constant]
+        type AvgBlockspaceUsageNumBlocks: Get<u32>;
+
         type FindBlockRewardAddress: FindBlockRewardAddress<Self::AccountId>;
 
         type FindVotingRewardAddresses: FindVotingRewardAddresses<Self::AccountId>;
@@ -78,6 +82,10 @@ mod pallet {
 
         type OnReward: OnReward<Self::AccountId, BalanceOf<Self>>;
     }
+
+    /// Utilization of blockspace (in bytes) by the normal extrinsics used to adjust issuance
+    #[pallet::storage]
+    pub(super) type AvgBlockspaceUsage<T> = StorageValue<_, u32, ValueQuery>;
 
     /// `pallet-rewards` events
     #[pallet::event]
@@ -124,6 +132,31 @@ impl<T: Config> Pallet<T> {
     }
 
     fn do_finalize(_block_number: BlockNumberFor<T>) {
+        let used_blockspace = frame_system::Pallet::<T>::all_extrinsics_len();
+        let avg_blockspace_usage = AvgBlockspaceUsage::<T>::get();
+        let avg_blockspace_usage_num_blocks = T::AvgBlockspaceUsageNumBlocks::get();
+
+        let avg_blockspace_usage = if frame_system::Pallet::<T>::block_number()
+            <= avg_blockspace_usage_num_blocks.into()
+        {
+            (avg_blockspace_usage + used_blockspace) / 2
+        } else {
+            // Multiplier is `a / b` stored as `(a, b)`
+            let multiplier = (2, u64::from(avg_blockspace_usage_num_blocks) + 1);
+
+            // Equivalent to `multiplier * used_blockspace + (1 - multiplier) * avg_blockspace_usage`
+            // using integer math
+            let a = multiplier.0 * u64::from(used_blockspace);
+            let b = (multiplier.1 - multiplier.0) * u64::from(avg_blockspace_usage);
+
+            u32::try_from((a + b) / multiplier.1).expect(
+                "Average of blockspace usage can't overflow if individual components do not \
+                overflow; qed",
+            )
+        };
+
+        AvgBlockspaceUsage::<T>::put(avg_blockspace_usage);
+
         let reward = T::VoteReward::get();
 
         for voter in T::FindVotingRewardAddresses::find_voting_reward_addresses() {
