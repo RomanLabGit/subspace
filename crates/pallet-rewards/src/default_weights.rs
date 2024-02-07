@@ -16,11 +16,4 @@
 //! Default weights for the Rewards Pallet
 //! This file was not auto-generated.
 
-use frame_support::weights::Weight;
-
-impl crate::WeightInfo for () {
-    fn on_initialize() -> Weight {
-        // TODO: Correct value
-        Weight::from_parts(1, 0)
-    }
-}
+impl crate::WeightInfo for () {}

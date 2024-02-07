@@ -13,8 +13,8 @@ use std::num::NonZeroU32;
 use subspace_runtime_primitives::{AccountId, Balance, BlockNumber, Signature};
 use subspace_test_runtime::{
     AllowAuthoringBy, BalancesConfig, DomainsConfig, EnableRewardsAt, MaxDomainBlockSize,
-    MaxDomainBlockWeight, RuntimeGenesisConfig, SubspaceConfig, SudoConfig, SystemConfig,
-    VestingConfig, SSC, WASM_BINARY,
+    MaxDomainBlockWeight, RewardsConfig, RuntimeGenesisConfig, SubspaceConfig, SudoConfig,
+    SystemConfig, VestingConfig, SSC, WASM_BINARY,
 };
 
 /// The `ChainSpec` parameterized for subspace test runtime.
@@ -117,6 +117,9 @@ fn create_genesis_config(
             allow_authoring_by: AllowAuthoringBy::Anyone,
             pot_slot_iterations: NonZeroU32::new(50_000_000).expect("Not zero; qed"),
             phantom: PhantomData,
+        },
+        rewards: RewardsConfig {
+            remaining_issuance: 1_000_000 * SSC,
         },
         vesting: VestingConfig { vesting },
         domains: DomainsConfig {

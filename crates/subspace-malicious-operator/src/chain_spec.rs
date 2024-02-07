@@ -13,7 +13,7 @@ use std::marker::PhantomData;
 use std::num::NonZeroU32;
 use subspace_runtime::{
     AllowAuthoringBy, DomainsConfig, EnableRewardsAt, MaxDomainBlockSize, MaxDomainBlockWeight,
-    RuntimeConfigsConfig, SubspaceConfig, VestingConfig,
+    RewardsConfig, RuntimeConfigsConfig, SubspaceConfig, VestingConfig,
 };
 use subspace_runtime_primitives::{AccountId, Balance, BlockNumber, SSC};
 
@@ -141,6 +141,7 @@ struct GenesisParams {
     enable_balance_transfers: bool,
     enable_non_root_calls: bool,
     confirmation_depth_k: u32,
+    remaining_issuance: Balance,
 }
 
 struct GenesisDomainParams {
@@ -192,6 +193,7 @@ pub fn dev_config() -> Result<GenericChainSpec<subspace_runtime::RuntimeGenesisC
                     enable_balance_transfers: true,
                     enable_non_root_calls: true,
                     confirmation_depth_k: 5,
+                    remaining_issuance: 1_000_000 * SSC,
                 },
                 GenesisDomainParams {
                     domain_name: "evm-domain".to_owned(),
@@ -235,6 +237,7 @@ fn subspace_genesis_config(
         enable_balance_transfers,
         enable_non_root_calls,
         confirmation_depth_k,
+        remaining_issuance,
     } = genesis_params;
 
     subspace_runtime::RuntimeGenesisConfig {
@@ -251,6 +254,7 @@ fn subspace_genesis_config(
             pot_slot_iterations,
             phantom: PhantomData,
         },
+        rewards: RewardsConfig { remaining_issuance },
         vesting: VestingConfig { vesting },
         runtime_configs: RuntimeConfigsConfig {
             enable_domains,
