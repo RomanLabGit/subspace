@@ -27,6 +27,7 @@ use frame_support::traits::Currency;
 use frame_system::pallet_prelude::*;
 use log::warn;
 pub use pallet::*;
+use serde::{Deserialize, Serialize};
 use sp_core::U256;
 use sp_runtime::traits::{CheckedAdd, CheckedSub, Zero};
 use sp_runtime::Saturating;
@@ -49,18 +50,20 @@ impl<AccountId, Balance> OnReward<AccountId, Balance> for () {
     fn on_reward(_account: AccountId, _reward: Balance) {}
 }
 
-#[derive(Debug, Default, Copy, Clone, Encode, Decode, MaxEncodedLen, TypeInfo)]
-struct IssuanceComponentParams<BlockNumber, Balance> {
+#[derive(
+    Debug, Default, Copy, Clone, Encode, Decode, MaxEncodedLen, TypeInfo, Serialize, Deserialize,
+)]
+pub struct IssuanceComponentParams<BlockNumber, Balance> {
     /// Maximum subsidy for initial issuance per block, total for all recipients
-    initial_subsidy: Balance,
+    pub initial_subsidy: Balance,
     /// Max SSC to be disbursed via this mechanism.
     ///
     /// It must be less than the remaining issuance at the time of initialization of this component.
-    max_component_issuance: Balance,
+    pub max_component_issuance: Balance,
     /// Block height at which constant reference subsidy issuance starts
-    initial_subsidy_start_block: BlockNumber,
+    pub initial_subsidy_start_block: BlockNumber,
     /// Number of blocks for which `initial_subsidy` is issued before the exponential decay starts
-    initial_subsidy_duration: BlockNumber,
+    pub initial_subsidy_duration: BlockNumber,
 }
 
 #[frame_support::pallet]
@@ -109,6 +112,11 @@ mod pallet {
     {
         /// Tokens left to issue to farmers at any given time
         pub remaining_issuance: BalanceOf<T>,
+        /// Block proposer subsidy parameters
+        pub proposer_subsidy_params:
+            Option<IssuanceComponentParams<BlockNumberFor<T>, BalanceOf<T>>>,
+        /// Voter subsidy parameters
+        pub voter_subsidy_params: Option<IssuanceComponentParams<BlockNumberFor<T>, BalanceOf<T>>>,
     }
 
     impl<T> Default for GenesisConfig<T>
@@ -119,6 +127,8 @@ mod pallet {
         fn default() -> Self {
             Self {
                 remaining_issuance: Default::default(),
+                proposer_subsidy_params: Default::default(),
+                voter_subsidy_params: Default::default(),
             }
         }
     }

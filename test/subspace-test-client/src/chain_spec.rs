@@ -120,6 +120,8 @@ fn create_genesis_config(
         },
         rewards: RewardsConfig {
             remaining_issuance: 1_000_000 * SSC,
+            proposer_subsidy_params: None,
+            voter_subsidy_params: None,
         },
         vesting: VestingConfig { vesting },
         domains: DomainsConfig {
