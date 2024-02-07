@@ -133,6 +133,7 @@ runtime-benchmarks = [
     "pallet-balances/runtime-benchmarks",
     "pallet-domains/runtime-benchmarks",
     "pallet-mmr/runtime-benchmarks",
+    "pallet-rewards/runtime-benchmarks",
     "pallet-runtime-configs/runtime-benchmarks",
     "pallet-subspace/runtime-benchmarks",
     "pallet-timestamp/runtime-benchmarks",

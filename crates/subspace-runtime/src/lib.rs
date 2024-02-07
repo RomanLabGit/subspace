@@ -636,7 +636,7 @@ impl pallet_rewards::Config for Runtime {
     type TransactionByteFee = TransactionByteFee;
     type FindBlockRewardAddress = Subspace;
     type FindVotingRewardAddresses = Subspace;
-    type WeightInfo = ();
+    type WeightInfo = pallet_rewards::weights::SubstrateWeight<Runtime>;
     type OnReward = ();
 }
 
@@ -807,6 +807,7 @@ mod benches {
         [pallet_balances, Balances]
         [pallet_domains, Domains]
         [pallet_mmr, Mmr]
+        [pallet_rewards, Rewards]
         [pallet_runtime_configs, RuntimeConfigs]
         [pallet_subspace, Subspace]
         [pallet_timestamp, Timestamp]
@@ -837,7 +838,7 @@ impl_runtime_apis! {
             Runtime::metadata_at_version(version)
         }
 
-        fn metadata_versions() -> sp_std::vec::Vec<u32> {
+        fn metadata_versions() -> Vec<u32> {
             Runtime::metadata_versions()
         }
     }

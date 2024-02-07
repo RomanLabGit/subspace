@@ -20,7 +20,9 @@
 #![warn(rust_2018_idioms, missing_debug_implementations)]
 #![feature(try_blocks)]
 
-mod default_weights;
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+pub mod weights;
 
 use frame_support::pallet_prelude::*;
 use frame_support::traits::Currency;
@@ -36,11 +38,6 @@ use subspace_runtime_primitives::{BlockNumber, FindBlockRewardAddress, FindVotin
 type BalanceOf<T> =
     <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-pub trait WeightInfo {
-    // TODO: We are doing non-trivial amount of work in block finalization, should we charge for it
-    //  during initialization?
-}
-
 /// Hooks to notify when there are any rewards for specific account.
 pub trait OnReward<AccountId, Balance> {
     fn on_reward(account: AccountId, reward: Balance);
@@ -51,7 +48,18 @@ impl<AccountId, Balance> OnReward<AccountId, Balance> for () {
 }
 
 #[derive(
-    Debug, Default, Copy, Clone, Encode, Decode, MaxEncodedLen, TypeInfo, Serialize, Deserialize,
+    Debug,
+    Default,
+    Copy,
+    Clone,
+    Eq,
+    PartialEq,
+    Encode,
+    Decode,
+    MaxEncodedLen,
+    TypeInfo,
+    Serialize,
+    Deserialize,
 )]
 pub struct IssuanceComponentParams<BlockNumber, Balance> {
     /// Maximum subsidy for initial issuance per block, total for all recipients
@@ -68,7 +76,8 @@ pub struct IssuanceComponentParams<BlockNumber, Balance> {
 
 #[frame_support::pallet]
 mod pallet {
-    use super::{BalanceOf, IssuanceComponentParams, OnReward, WeightInfo};
+    use crate::weights::WeightInfo;
+    use crate::{BalanceOf, IssuanceComponentParams, OnReward};
     use frame_support::pallet_prelude::*;
     use frame_support::traits::Currency;
     use frame_system::pallet_prelude::*;
@@ -181,6 +190,25 @@ mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_finalize(now: BlockNumberFor<T>) {
             Self::do_finalize(now);
+        }
+    }
+
+    #[pallet::call]
+    impl<T: Config> Pallet<T> {
+        /// Update dynamic issuance parameters
+        #[pallet::call_index(0)]
+        #[pallet::weight(T::WeightInfo::update_issuance_params())]
+        pub fn update_issuance_params(
+            origin: OriginFor<T>,
+            proposer_subsidy_params: IssuanceComponentParams<BlockNumberFor<T>, BalanceOf<T>>,
+            voter_subsidy_params: IssuanceComponentParams<BlockNumberFor<T>, BalanceOf<T>>,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+
+            ProposerSubsidyParams::<T>::put(proposer_subsidy_params);
+            VoterSubsidyParams::<T>::put(voter_subsidy_params);
+
+            Ok(())
         }
     }
 }
