@@ -138,6 +138,7 @@ fn create_genesis_config(
                 signing_key: get_from_seed::<OperatorPublicKey>("Alice"),
                 minimum_nominator_stake: 100 * SSC,
                 nomination_tax: Percent::from_percent(5),
+                initial_balances: vec![],
             }),
         },
     }
